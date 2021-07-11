@@ -336,7 +336,7 @@ void user_init(void) {
     uart_set_baud(1, 9600);
     gpio_set_iomux_function(2, IOMUX_GPIO2_FUNC_UART1_TXD); //Activate UART for GPIO2
     udplog_init(3);
-    UDPLUS("\n\n\nSerial-Sniffer " VERSION "\n");
+    UDPLUS("\n\n\nGrowatt-ModBus " VERSION "\n");
     xTaskCreate(capture_task,"capture", 512, NULL, 1, NULL);
     xTimerP=xTimerCreate( "parser",   30/portTICK_PERIOD_MS, pdFALSE, NULL, serial_parser);
     xTimerS=xTimerCreate( "sender", 1000/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
