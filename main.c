@@ -1,7 +1,8 @@
 /*  (c) 2020-2021 HomeAccessoryKid
- *  This is a serial sniffer for half duplex
- *  use two diodes and a pull up for the two serial lines
- *  feed this to U0RXD = GPIO1
+ *  This is a growatt modbus master that is an http server to report the current values
+ *  it reads from U0RXD = GPIO1
+ *  and it writes to U1TXD = GPIO2
+ *  it uses UDPlogger to report debugging state
  */
 
 #include <stdio.h>
@@ -122,10 +123,10 @@ void serial_parser( TimerHandle_t xTimer ) {
                     }
                     timeT_old=timeT;
                     Efine=EacT*1000+Eplus/360000;
-                    sprintf(json,"{" \ //TODO: make a lock on using the string midway construction
+                    sprintf(json,"{" \
                     LD("Status")LF("Ppv")LF("Vpv1")LF("Ppv1")LF("Vpv2")LF("Ppv2")LF("Pac")LF("Vac")LF("EacT")LF("timeT")LF("Temp")LF("Vint")LD("Efine")LF("Epv1t")LF("Epv2t")LF("EpvT")LEnd, \
                            D2(0),   F4(2),    F2(6),   F4(10),   F2(14),   F4(18),  F4(22),  F2(28),   F4(56),    T4(60),   F2(64),   F2(84),   Efine  ,   F4(96),    F4(104),   F4(112)     \
-                    );
+                    ); //TODO: make a lock on using the string midway construction
                 } else { //Status is Inactive or Fault
                     sprintf(json,"{" LD("Status")LF("EacT")LF("Epv1t")LF("Epv2t")LF("EpvT")LEnd, \
                                          D2(0),      F4(56) ,  F4(96),    F4(104),   F4(112)     \
