@@ -66,8 +66,8 @@ void serial_sender( TimerHandle_t xTimer ) {
     // collect 58 (0x3a) words for a single request
     //     01 04 00 00 - 00 3a 70 19 END
 //     uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x3a);uart_putc(1,0x70);uart_putc(1,0x19);
-// 01040000002d3017
-    uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0x30);uart_putc(1,0x17);
+// 01040000002e7016
+    uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x2e);uart_putc(1,0x70);uart_putc(1,0x16);
     uart_flush_txfifo(1);
 }
 
