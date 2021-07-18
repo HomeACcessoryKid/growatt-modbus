@@ -60,15 +60,22 @@ char json[256]="{\"Status\":3}",json2[128]=LEnd;
 
 uint32_t   EacT,EacT_old=0,Pac,Efine,Eplus=0; //Efine in 0.1Wh, others in 0.1kWh 
 TickType_t timeT,timeT_old=0; //time in ticks of 10ms 
+int        query_type=0; // 0 will mean register 0x2d-0x59 and 1 will mean register 0x00 till 0x2c
 
 TimerHandle_t xTimerP, xTimerS;
 void serial_sender( TimerHandle_t xTimer ) {
-    // collect 58 (0x3a) words for a single request
-    //     01 04 00 00 - 00 3a 70 19 END
-//     uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x3a);uart_putc(1,0x70);uart_putc(1,0x19);
-// 01040000002e7016
-    uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x2e);uart_putc(1,0x70);uart_putc(1,0x16);
-    uart_flush_txfifo(1);
+    // collect 58 (0x3a) words for a single request does NOT work since it provokes an error 01 84 01 82 c0 (not supported by server)
+    if (query_type) { //0x00 - 0x2c
+        // 01040000002d3017
+        uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0x30);uart_putc(1,0x17);
+        uart_flush_txfifo(1);
+        query_type=0;
+    } else { //0x2d-0x59
+        // 0104002d002da01e
+        uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0xa0);uart_putc(1,0x1e);
+        uart_flush_txfifo(1);
+        query_type=1;
+    }
 }
 
 
