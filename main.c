@@ -65,7 +65,9 @@ TimerHandle_t xTimerP, xTimerS;
 void serial_sender( TimerHandle_t xTimer ) {
     // collect 58 (0x3a) words for a single request
     //     01 04 00 00 - 00 3a 70 19 END
-    uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x3a);uart_putc(1,0x70);uart_putc(1,0x19);
+//     uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x3a);uart_putc(1,0x70);uart_putc(1,0x19);
+// 01040000002d3017
+    uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0x30);uart_putc(1,0x17);
     uart_flush_txfifo(1);
 }
 
@@ -339,7 +341,7 @@ void user_init(void) {
     UDPLUS("\n\n\nGrowatt-ModBus " VERSION "\n");
     xTaskCreate(capture_task,"capture", 512, NULL, 1, NULL);
     xTimerP=xTimerCreate( "parser",   30/portTICK_PERIOD_MS, pdFALSE, NULL, serial_parser);
-    xTimerS=xTimerCreate( "sender", 1000/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
+    xTimerS=xTimerCreate( "sender", 5000/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
     xTimerStart(xTimerS,0);
     xTaskCreate(http_task, "HTTP", 512, NULL, 1, NULL);
 }
