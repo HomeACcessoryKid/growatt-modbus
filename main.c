@@ -60,7 +60,7 @@ char json[256]="{\"Status\":3}",json2[128]=LEnd;
 
 uint32_t   EacT,EacT_old=0,Pac,Efine,Eplus=0; //Efine in 0.1Wh, others in 0.1kWh 
 TickType_t timeT,timeT_old=0; //time in ticks of 10ms 
-int        query_type=0; // 0 will mean register 0x2d-0x59 and 1 will mean register 0x00 till 0x2c
+int        query_type=0; // 0 will mean register 0x2d-0x39 and 1 will mean register 0x00 till 0x2c
 
 TimerHandle_t xTimerP, xTimerS;
 void serial_sender( TimerHandle_t xTimer ) {
@@ -70,9 +70,9 @@ void serial_sender( TimerHandle_t xTimer ) {
         uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0x30);uart_putc(1,0x17);
         uart_flush_txfifo(1);
         query_type=0;
-    } else { //0x2d-0x59
-        // 0104002d002da01e
-        uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0xa0);uart_putc(1,0x1e);
+    } else { //0x2d-0x39
+        // 0104002d000da1c6
+        uart_putc(1,1);uart_putc(1,4);uart_putc(1,0);uart_putc(1,0x2d);uart_putc(1,0);uart_putc(1,0x0d);uart_putc(1,0xa1);uart_putc(1,0xc6);
         uart_flush_txfifo(1);
         query_type=1;
     }
@@ -95,7 +95,6 @@ void serial_parser( TimerHandle_t xTimer ) {
             datalen=message[2];
             data=message+3;
             if (command==4) { //Ignore the Holding registers
-              if (datalen==90) {
                 if (data[0]==0) { //registers 00-2c
                     if (D2(0)==1) { //Status is Active
                         timeT=xTaskGetTickCount(); Pac=D4(22); EacT=D4(56);
@@ -122,27 +121,6 @@ void serial_parser( TimerHandle_t xTimer ) {
                           F4(6),    F4(14),   F4(22)      \
                     );
                 }
-              } else { //unified output :-)
-                if (D2(0)==1) { //Status is Active
-                    timeT=xTaskGetTickCount(); Pac=D4(22); EacT=D4(56);
-                    if (timeT_old) { //we need to initialze timeT_old first
-                        if (EacT>EacT_old) {Eplus=0; EacT_old=EacT;}
-                        Eplus+=Pac*(timeT-timeT_old);
-                        if (Eplus>360000000) {printf("Eplus=%d!\n",Eplus); Eplus=360000000;}
-                    }
-                    timeT_old=timeT;
-                    Efine=EacT*1000+Eplus/360000;
-                    sprintf(json,"{" \
-                    LD("Status")LF("Ppv")LF("Vpv1")LF("Ppv1")LF("Vpv2")LF("Ppv2")LF("Pac")LF("Vac")LF("EacT")LF("timeT")LF("Temp")LF("Vint")LD("Efine")LF("Epv1t")LF("Epv2t")LF("EpvT")LEnd, \
-                           D2(0),   F4(2),    F2(6),   F4(10),   F2(14),   F4(18),  F4(22),  F2(28),   F4(56),    T4(60),   F2(64),   F2(84),   Efine  ,   F4(96),    F4(104),   F4(112)     \
-                    ); //TODO: make a lock on using the string midway construction
-                } else { //Status is Inactive or Fault
-                    sprintf(json,"{" LD("Status")LF("EacT")LF("Epv1t")LF("Epv2t")LF("EpvT")LEnd, \
-                                         D2(0),      F4(56) ,  F4(96),    F4(104),   F4(112)     \
-                    );
-                }
-                printf("addr=%x,cmd=%x,len=%d,json=%s\n",address,command,datalen,json);
-              }
             }
         } else { // bad CRC
             printf("calccrc=%04x not equal to datacrc=%04x\n",msg_crc,datacrc);
