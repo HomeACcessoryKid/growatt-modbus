@@ -341,7 +341,7 @@ void user_init(void) {
     UDPLUS("\n\n\nGrowatt-ModBus " VERSION "\n");
     xTaskCreate(capture_task,"capture", 512, NULL, 1, NULL);
     xTimerP=xTimerCreate( "parser",   30/portTICK_PERIOD_MS, pdFALSE, NULL, serial_parser);
-    xTimerS=xTimerCreate( "sender", 5000/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
+    xTimerS=xTimerCreate( "sender", 1000/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
     xTimerStart(xTimerS,0);
     xTaskCreate(http_task, "HTTP", 512, NULL, 1, NULL);
 }
