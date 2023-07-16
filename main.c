@@ -67,6 +67,27 @@ typedef enum {
     ENDPOINT_VALUE_7,
     ENDPOINT_VALUE_8,
     ENDPOINT_VALUE_9,
+    ENDPOINT_VALUE_10,
+    ENDPOINT_VALUE_11,
+    ENDPOINT_VALUE_12,
+    ENDPOINT_VALUE_13,
+    ENDPOINT_VALUE_14,
+    ENDPOINT_VALUE_15,
+    ENDPOINT_VALUE_16,
+    ENDPOINT_VALUE_17,
+    ENDPOINT_VALUE_18,
+    ENDPOINT_VALUE_19,
+    ENDPOINT_VALUE_20,
+    ENDPOINT_VALUE_21,
+    ENDPOINT_VALUE_22,
+    ENDPOINT_VALUE_23,
+    ENDPOINT_VALUE_24,
+    ENDPOINT_VALUE_25,
+    ENDPOINT_VALUE_26,
+    ENDPOINT_VALUE_27,
+    ENDPOINT_VALUE_28,
+    ENDPOINT_VALUE_29,
+    ENDPOINT_VALUE_30,
     ENDPOINT_UNKNOWN,
 } endpoint_t;
 
@@ -339,7 +360,7 @@ void user_init(void) {
     UDPLUS("\n\n\nGrowatt-ModBus " VERSION "\n");
     xTaskCreate(capture_task,"capture", 512, NULL, 1, NULL);
     xTimerP=xTimerCreate( "parser",   30/portTICK_PERIOD_MS, pdFALSE, NULL, serial_parser);
-    xTimerS=xTimerCreate( "sender", 1000/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
+    xTimerS=xTimerCreate( "sender",  500/portTICK_PERIOD_MS, pdTRUE,  NULL, serial_sender);
     xTimerStart(xTimerS,0);
     xTaskCreate(http_task, "HTTP", 512, NULL, 1, NULL);
 }
