@@ -55,8 +55,23 @@ uint32_t calccrc(uint32_t * data, int len) {
 #define F4(addr) (((double)D4(addr))/10.0) /* for P & E field */
 #define T4(addr) (((double)D4(addr))/ 2.0) /* for timeT field */
 #define MSGSIZE 128
+
+typedef enum {
+    ENDPOINT_INDEX=0,
+    ENDPOINT_VALUE_1,
+    ENDPOINT_VALUE_2,
+    ENDPOINT_VALUE_3,
+    ENDPOINT_VALUE_4,
+    ENDPOINT_VALUE_5,
+    ENDPOINT_VALUE_6,
+    ENDPOINT_VALUE_7,
+    ENDPOINT_VALUE_8,
+    ENDPOINT_VALUE_9,
+    ENDPOINT_UNKNOWN,
+} endpoint_t;
+
 uint32_t buffer[MSGSIZE],idx=0;
-char json[256]="{\"Status\":3}",json2[128]=LEnd;
+char json[ENDPOINT_UNKNOWN][256],json2[128]=LEnd;
 
 uint32_t   EacT,EacT_old=0,Pac,Efine,Eplus=0; //Efine in 0.1Wh, others in 0.1kWh 
 TickType_t timeT,timeT_old=0; //time in ticks of 10ms 
@@ -96,6 +111,7 @@ void serial_parser( TimerHandle_t xTimer ) {
             data=message+3;
             if (command==4) { //Ignore the Holding registers
                 if (data[0]==0) { //registers 00-2c
+                    for (i=ENDPOINT_UNKNOWN-1;i>0;i--) strcpy(json[i],json[i-1]);
                     if (D2(0)==1) { //Status is Active
                         timeT=xTaskGetTickCount(); Pac=D4(22); EacT=D4(56);
                         if (timeT_old) { //we need to initialze timeT_old first
@@ -105,16 +121,16 @@ void serial_parser( TimerHandle_t xTimer ) {
                         }
                         timeT_old=timeT;
                         Efine=EacT*1000+Eplus/360000;
-                        sprintf(json,"{" \
+                        sprintf(json[0],"{" \
                         LD("Status")LF("Ppv")LF("Vpv1")LF("Ppv1")LF("Vpv2")LF("Ppv2")LF("Pac")LF("Vac")LF("EacT")LF("timeT")LF("Temp")LF("Vint")LD("Efine")  LS, \
                                D2(0),   F4(2),    F2(6),   F4(10),   F2(14),   F4(18),  F4(22),  F2(28),   F4(56),    T4(60),   F2(64),   F2(84),   Efine  ,     \
                         json2);
                     } else { //Status is Inactive or Fault
-                        sprintf(json,"{" LD("Status")LF("EacT") LS, \
+                        sprintf(json[0],"{" LD("Status")LF("EacT") LS, \
                                                 D2(0),   F4(56) ,   \
                         json2);
                     }
-                    printf("addr=%x,cmd=%x,len=%d,json=%s\n",address,command,datalen,json);
+                    printf("addr=%x,cmd=%x,len=%d,json=%s\n",address,command,datalen,json[0]);
                 } else { //    else registers 2d-59
                     sprintf(json2, \
                     LF("Epv1t")LF("Epv2t")LF("EpvT")LEnd, \
@@ -138,15 +154,10 @@ void capture_task(void *arg) {
     while(1) {
         int c=getchar(); buffer[idx]=c; //this cannot be collapsed, else first byte missing ?!?!?!?!?
         if (idx<MSGSIZE-1) idx++;
-        xTimerReset(xTimerP, 0);
+        xTimerReset(xTimerP, 0); //as long as new input keeps arriving within 30ms, do not parse yet
     }
 }
 
-
-typedef enum {
-    ENDPOINT_UNKNOWN = 0,
-    ENDPOINT_INDEX,
-} endpoint_t;
 
 typedef struct _client {
     int fd;
@@ -193,7 +204,7 @@ static void client_send_redirect(client_t *client, int code, const char *redirec
     client_send(client, buffer, len);
 }
 
-static void my_server_on_index(client_t *client) {
+static void my_server_on_value(client_t *client, int endpoint) {
     static const char http_prologue[] =
         "HTTP/1.1 200 \r\n"
         "Content-Type: text/html; charset=utf-8\r\n"
@@ -203,17 +214,24 @@ static void my_server_on_index(client_t *client) {
         "\r\n";
 
     client_send(client, http_prologue, sizeof(http_prologue)-1);
-    client_send_chunk(client, json);
+    client_send_chunk(client, json[endpoint]);
     client_send_chunk(client, "");
 }
 
 static int my_server_on_url(http_parser *parser, const char *data, size_t length) {
     client_t *client = (client_t*) parser->data;
+    char endpoint[3];
 
     client->endpoint = ENDPOINT_UNKNOWN;
     if (parser->method == HTTP_GET) {
         if (!strncmp(data, "/", length)) {
             client->endpoint = ENDPOINT_INDEX;
+        }
+        for (int i=0;i<ENDPOINT_UNKNOWN;i++) {
+            sprintf(endpoint, "/%d",i);
+            if (!strncmp(data, endpoint , length)) {
+                client->endpoint = i;
+            }
         }
     }
 
@@ -229,17 +247,11 @@ static int my_server_on_url(http_parser *parser, const char *data, size_t length
 static int my_server_on_message_complete(http_parser *parser) {
     client_t *client = parser->data;
 
-    switch(client->endpoint) {
-        case ENDPOINT_INDEX: {
-            //printf("Index\n");
-            my_server_on_index(client);
-            break;
-        }
-        case ENDPOINT_UNKNOWN: {
-            printf("Unknown endpoint\n");
-            client_send_redirect(client, 302, "http://192.168.178.175/");
-            break;
-        }
+    if (client->endpoint != ENDPOINT_UNKNOWN) {
+        my_server_on_value(client, client->endpoint);
+    } else {
+        printf("Unknown endpoint\n");
+        client_send_redirect(client, 302, "http://192.168.178.115/"); //TODO: make this dynamic
     }
 
     if (client->body) {
@@ -321,6 +333,7 @@ static void http_task(void *arg) {
 void user_init(void) {
     uart_set_baud(0, 9600);
     uart_set_baud(1, 9600);
+    strcpy(json[0],"{\"Status\":3}");
     gpio_set_iomux_function(2, IOMUX_GPIO2_FUNC_UART1_TXD); //Activate UART for GPIO2
     udplog_init(3);
     UDPLUS("\n\n\nGrowatt-ModBus " VERSION "\n");
