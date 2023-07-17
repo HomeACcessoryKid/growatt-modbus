@@ -78,16 +78,6 @@ typedef enum {
     ENDPOINT_VALUE_18,
     ENDPOINT_VALUE_19,
     ENDPOINT_VALUE_20,
-    ENDPOINT_VALUE_21,
-    ENDPOINT_VALUE_22,
-    ENDPOINT_VALUE_23,
-    ENDPOINT_VALUE_24,
-    ENDPOINT_VALUE_25,
-    ENDPOINT_VALUE_26,
-    ENDPOINT_VALUE_27,
-    ENDPOINT_VALUE_28,
-    ENDPOINT_VALUE_29,
-    ENDPOINT_VALUE_30,
     ENDPOINT_UNKNOWN,
 } endpoint_t;
 
@@ -147,8 +137,8 @@ void serial_parser( TimerHandle_t xTimer ) {
                                D2(0),   F4(2),    F2(6),   F4(10),   F2(14),   F4(18),  F4(22),  F2(28),   F4(56),    T4(60),   F2(64),   F2(84),   Efine  ,     \
                         json2);
                     } else { //Status is Inactive or Fault
-                        sprintf(json[0],"{" LD("Status")LF("EacT") LS, \
-                                                D2(0),   F4(56) ,   \
+                        sprintf(json[0],"{" LD("Status")LF("EacT")LF("Vac") LS, \
+                                                D2(0),   F4(56) ,   F2(28),     \
                         json2);
                     }
                     printf("addr=%x,cmd=%x,len=%d,json=%s\n",address,command,datalen,json[0]);
@@ -169,6 +159,13 @@ void serial_parser( TimerHandle_t xTimer ) {
                                                                28   30  32  34  36  38  40  42  44  46  48  50  52  54   56       60       64   66  68  70  72  74  76  78  80  82   84
 01045a000100005c4e0668004800002e32064f004900002e1c00005a771387 09ae 005f00005a77000000000000000000000000000000000000003e 0002f8d7 0be7ef67 0220 000000000000000000000000000000000000 0ede 00000000b3c3
 addr=1,cmd=4,len=90,json={"Status":1,"Ppv":2363.0,"Vpv1":164.0,"Ppv1":1182.6,"Vpv2":161.5,"Ppv2":1180.4,"Pac":2315.9,"Vac":247.8,"EacT":0.0,"tT":31.0,"Temp":0.2,"Vint":0.0,"Epv1t":3.1,"Epv2t":3.2,"EpvT":19671.8,"X":0}
+*/
+
+/* example of over-voltage results in status=3
+01041a4e2000000000000000240001f9590000002500020aea00040443dd9e
+01045a0003000000000830000000000000082a000000000000000000001385 09c2 00010000000000000000000000000000000000000000000000480003fa6f0fe3f62301d4000000000000000009de00000000001e0000082d0000000035e0
+addr=1,cmd=4,len=90,json={"Status":3,"EacT":26071.9,"Epv1t":3.6,"Epv2t":3.7,"EpvT":26323.5,"X":0}
+should report 249.8 Vac
 */
 
 void capture_task(void *arg) {
